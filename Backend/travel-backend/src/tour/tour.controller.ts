@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { TourService } from './tour.service';
 import { CreateTourDto, UpdateTourDto, CreateDestinationDto } from './dto/tour.dto';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
@@ -36,8 +36,8 @@ export class TourController {
   // Đường dẫn: GET http://localhost:3000/tour
   @Get()
   @ApiOperation({ summary: 'Lấy toàn bộ danh sách Tour' })
-  getAllTours() {
-    return this.tourService.getAllTours();
+  getAllTours(@Query('keyword') keyword?: string) {
+    return this.tourService.getAllTours(keyword);
   }
 
   // Đường dẫn: GET http://localhost:3000/tour/1

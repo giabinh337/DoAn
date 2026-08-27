@@ -1,8 +1,8 @@
 export const categories = [
-  { id: 1, name: "Tất cả", icon: "Globe" },
-  { id: 2, name: "Nghỉ dưỡng", icon: "Palmtree" },
+  { id: 0, name: "Tất cả", icon: "Globe" },
+  { id: 1, name: "Nghỉ dưỡng", icon: "Palmtree" },
   { id: 3, name: "Food tour", icon: "Utensils" },
-  { id: 4, name: "Mạo hiểm", icon: "Mountain" }
+  { id: 2, name: "Mạo hiểm", icon: "Mountain" }
 ];
 
 export const tours = [

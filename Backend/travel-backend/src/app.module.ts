@@ -5,9 +5,10 @@ import { TourModule } from './tour/tour.module';
 import { OrderModule } from './order/order.module';
 import { UploadModule } from './upload/upload.module';
 import { ReviewModule } from './review/review.module';
+import { PromotionModule } from './promotion/promotion.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, TourModule, OrderModule, UploadModule, ReviewModule],
+  imports: [PrismaModule, AuthModule, TourModule, OrderModule, UploadModule, ReviewModule, PromotionModule],
   controllers: [],
   providers: [],
 })

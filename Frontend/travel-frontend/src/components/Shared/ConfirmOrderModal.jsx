@@ -2,6 +2,8 @@ import React from 'react';
 import { CheckCircle, AlertTriangle, X } from 'lucide-react';
 
 const ConfirmOrderModal = ({ isOpen, onClose, onConfirm, order, newStatus }) => {
+  const [reason, setReason] = React.useState('');
+
   if (!isOpen || !order) return null;
 
   const isConfirm = newStatus === 'CONFIRMED';
@@ -52,6 +54,19 @@ const ConfirmOrderModal = ({ isOpen, onClose, onConfirm, order, newStatus }) => 
               <span className="font-bold text-orange-500">{order.totalPrice.toLocaleString()}đ</span>
             </div>
           </div>
+
+          {!isConfirm && (
+            <div className="mt-4">
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Lý do từ chối / hủy đơn:</label>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Ví dụ: Đã hết chỗ, Khách tự yêu cầu hủy..."
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none text-sm resize-none"
+                rows="2"
+              ></textarea>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -63,7 +78,7 @@ const ConfirmOrderModal = ({ isOpen, onClose, onConfirm, order, newStatus }) => 
             Hủy bỏ
           </button>
           <button 
-            onClick={onConfirm}
+            onClick={() => onConfirm(reason)}
             className={`flex-1 text-white font-bold py-2.5 rounded-xl shadow-lg transition-all ${
               isConfirm 
                 ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' 

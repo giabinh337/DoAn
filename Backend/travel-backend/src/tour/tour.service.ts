@@ -7,8 +7,18 @@ export class TourService {
   constructor(private prisma: PrismaService) {}
 
   // 1. Lấy toàn bộ danh sách Tour (Read All)
-  async getAllTours() {
+  async getAllTours(keyword?: string) {
+    const whereCondition = keyword
+      ? {
+          OR: [
+            { name: { contains: keyword } },
+            { destination: { name: { contains: keyword } } },
+          ],
+        }
+      : {};
+
     return this.prisma.tour.findMany({
+      where: whereCondition,
       include: {
         category: true, // Lấy luôn thông tin Category đi kèm
         destination: true, // Lấy luôn thông tin Destination đi kèm

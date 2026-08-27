@@ -15,6 +15,9 @@ const Checkout = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
 
   // Lấy thông tin tour để hiển thị giá
   useEffect(() => {
@@ -71,6 +74,25 @@ const Checkout = () => {
     setIsPaymentModalOpen(true);
   };
 
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setIsApplyingPromo(true);
+    try {
+      const res = await fetch(`http://localhost:3000/promotions/validate?code=${promoCode}`);
+      const data = await res.json();
+      if (res.ok) {
+        setAppliedPromo(data);
+      } else {
+        alert(data.message || 'Mã không hợp lệ!');
+        setAppliedPromo(null);
+      }
+    } catch (err) {
+      alert('Lỗi kết nối!');
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
+
   const executeBooking = async () => {
     setIsLoading(true);
     try {
@@ -84,7 +106,8 @@ const Checkout = () => {
           userId: user?.id,
           tourId: id,
           passengers: passengers,
-          totalPrice: totalPrice
+          totalPrice: finalPrice,
+          promotionId: appliedPromo ? appliedPromo.id : null
         }),
       });
 
@@ -104,15 +127,17 @@ const Checkout = () => {
 
   if (!tour) return <div className="p-20 text-center text-xl">Đang tải thông tin...</div>;
 
-  const totalPrice = tour.price * passengerCount;
+  const basePrice = tour.price * passengerCount;
+  const discountAmount = appliedPromo ? appliedPromo.discountValue : 0;
+  const finalPrice = Math.max(0, basePrice - discountAmount);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-5xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-bold text-slate-900 mb-8">Thanh toán & Đặt Tour</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Form nhập thông tin */}
-        <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Số lượng hành khách</label>
@@ -169,7 +194,7 @@ const Checkout = () => {
         </div>
 
         {/* Tóm tắt đơn hàng */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit sticky top-24">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit sticky top-24">
           <h2 className="text-xl font-bold text-slate-900 mb-6">Tóm tắt đơn hàng</h2>
           
           <div className="flex gap-4 mb-6 pb-6 border-b border-gray-100">
@@ -189,11 +214,37 @@ const Checkout = () => {
               <span className="text-gray-600">Số lượng</span>
               <span className="font-medium text-slate-900">x {passengerCount}</span>
             </div>
+            {appliedPromo && (
+              <div className="flex justify-between text-emerald-600">
+                <span>Khuyến mãi ({appliedPromo.code})</span>
+                <span className="font-medium">- {appliedPromo.discountValue.toLocaleString()}đ</span>
+              </div>
+            )}
+          </div>
+
+          <div className="mb-6">
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                placeholder="Mã giảm giá" 
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500 uppercase"
+              />
+              <button 
+                type="button"
+                onClick={handleApplyPromo}
+                disabled={isApplyingPromo}
+                className="bg-slate-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-800 disabled:opacity-50 whitespace-nowrap"
+              >
+                Áp dụng
+              </button>
+            </div>
           </div>
 
           <div className="flex justify-between items-center mb-2">
             <span className="font-bold text-slate-900">Tổng cộng</span>
-            <span className="text-2xl font-extrabold text-orange-500">{totalPrice.toLocaleString()}đ</span>
+            <span className="text-2xl font-extrabold text-orange-500">{finalPrice.toLocaleString()}đ</span>
           </div>
           <p className="text-xs text-gray-500 text-right">Đã bao gồm thuế và phí</p>
         </div>
@@ -202,7 +253,7 @@ const Checkout = () => {
       <CheckoutSuccessModal 
         isOpen={isSuccessModalOpen} 
         onClose={() => setIsSuccessModalOpen(false)} 
-        totalPrice={totalPrice}
+        totalPrice={finalPrice}
       />
 
       {/* Modal Thanh toán QR */}
@@ -236,7 +287,7 @@ const Checkout = () => {
               <div className="space-y-3 mb-6">
                 <p className="text-sm text-gray-500">Mở ứng dụng ngân hàng và quét mã để thanh toán</p>
                 <div className="bg-orange-50 text-orange-700 py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 border border-orange-100">
-                  Tổng tiền: <span className="text-xl font-extrabold">{totalPrice.toLocaleString()}đ</span>
+                  Tổng tiền: <span className="text-xl font-extrabold">{finalPrice.toLocaleString()}đ</span>
                 </div>
                 <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-xl">
                   Nội dung chuyển khoản (Tự động):<br/>

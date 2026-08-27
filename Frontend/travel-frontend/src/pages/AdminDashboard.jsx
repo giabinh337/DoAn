@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, MapPin, Tag, Package, Users, DollarSign, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import TourFormModal from '../components/Admin/TourFormModal';
 import ConfirmOrderModal from '../components/Shared/ConfirmOrderModal';
 import OrderDetailModal from '../components/Admin/OrderDetailModal';
+import PromotionFormModal from '../components/Admin/PromotionFormModal';
+import ConfirmDeleteModal from '../components/Shared/ConfirmDeleteModal';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('tours'); // 'tours' | 'orders'
+  const [activeTab, setActiveTab] = useState('tours'); // 'tours' | 'orders' | 'promotions'
   
   const [tours, setTours] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [promotions, setPromotions] = useState([]);
+  const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
   const [editingTour, setEditingTour] = useState(null);
+  const [deleteTourId, setDeleteTourId] = useState(null);
   
   // State quản lý Modal
   const [confirmOrder, setConfirmOrder] = useState({ isOpen: false, order: null, newStatus: '' });
@@ -22,15 +29,19 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [toursRes, ordersRes] = await Promise.all([
+      const [toursRes, ordersRes, promoRes, statsRes] = await Promise.all([
         fetch('http://localhost:3000/tour'),
-        fetch('http://localhost:3000/orders')
+        fetch('http://localhost:3000/orders'),
+        fetch('http://localhost:3000/promotions'),
+        fetch('http://localhost:3000/orders/stats')
       ]);
       
       if (!toursRes.ok || !ordersRes.ok) throw new Error('Không thể tải dữ liệu');
       
       setTours(await toursRes.json());
       setOrders(await ordersRes.json());
+      setPromotions(promoRes.ok ? await promoRes.json() : []);
+      setStats(statsRes.ok ? await statsRes.json() : null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -42,16 +53,37 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
-  const handleDeleteTour = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa Tour này?')) return;
+  const handleDeleteTour = (id) => {
+    setDeleteTourId(id);
+  };
+
+  const executeDeleteTour = async () => {
+    if (!deleteTourId) return;
     try {
-      const response = await fetch(`http://localhost:3000/tour/${id}`, { method: 'DELETE' });
+      const response = await fetch(`http://localhost:3000/tour/${deleteTourId}`, { method: 'DELETE' });
       if (response.ok) {
-        setTours(tours.filter(t => t.id !== id));
-        alert('Đã xóa thành công!');
+        setTours(tours.filter(t => t.id !== deleteTourId));
       }
     } catch (err) {
       alert('Có lỗi xảy ra khi xóa!');
+    } finally {
+      setDeleteTourId(null);
+    }
+  };
+
+  const handleAddPromotion = () => {
+    setIsPromoModalOpen(true);
+  };
+
+  const handleDeletePromotion = async (id) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa mã này?')) return;
+    try {
+      const res = await fetch(`http://localhost:3000/promotions/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setPromotions(promotions.filter(p => p.id !== id));
+      }
+    } catch (err) {
+      alert('Lỗi khi xóa!');
     }
   };
 
@@ -59,15 +91,18 @@ const AdminDashboard = () => {
     setConfirmOrder({ isOpen: true, order, newStatus: status });
   };
 
-  const executeUpdateOrderStatus = async () => {
+  const executeUpdateOrderStatus = async (reason) => {
     const { order, newStatus } = confirmOrder;
     if (!order) return;
     
     try {
+      const payload = { status: newStatus };
+      if (reason) payload.cancelReason = reason;
+
       const res = await fetch(`http://localhost:3000/orders/${order.id}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         setOrders(orders.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
@@ -82,13 +117,18 @@ const AdminDashboard = () => {
     }
   };
 
-  // Thống kê Doanh thu
-  const totalRevenue = orders
-    .filter(o => o.status === 'CONFIRMED')
-    .reduce((sum, o) => sum + o.totalPrice, 0);
-  const totalOrders = orders.length;
-  const cancelledOrders = orders.filter(o => o.status === 'CANCELLED').length;
-  const totalPassengers = orders.reduce((sum, o) => sum + (o.passengers?.length || 0), 0);
+  // Thống kê Doanh thu từ API Backend
+  const totalRevenue = stats?.totalRevenue || 0;
+  const totalOrders = stats?.totalOrders || 0;
+  const cancelledOrders = stats?.cancelledOrders || 0;
+  const totalPassengers = stats?.totalPassengers || 0;
+
+  const pieData = [
+    { name: 'Đã xử lý', value: orders.filter(o => o.status === 'CONFIRMED').length },
+    { name: 'Chờ xử lý', value: orders.filter(o => o.status === 'PENDING').length },
+    { name: 'Đã hủy', value: orders.filter(o => o.status === 'CANCELLED').length },
+  ];
+  const COLORS = ['#10B981', '#F59E0B', '#EF4444'];
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-12 min-h-screen">
@@ -97,15 +137,6 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-extrabold text-slate-900">Quản trị Hệ thống</h1>
           <p className="text-gray-500 mt-2">Theo dõi doanh thu, quản lý đơn hàng và dữ liệu Tour</p>
         </div>
-        {activeTab === 'tours' && (
-          <button 
-            onClick={() => { setEditingTour(null); setIsModalOpen(true); }}
-            className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-teal-600/20 transition-all"
-          >
-            <Plus className="w-5 h-5" />
-            Thêm Tour Mới
-          </button>
-        )}
       </div>
 
       {/* Thẻ Thống Kê (Statistics) */}
@@ -151,24 +182,126 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Tabs Menu */}
-      <div className="flex gap-4 mb-6 border-b border-gray-200">
-        <button 
-          onClick={() => setActiveTab('tours')}
-          className={`pb-4 px-2 font-bold transition-colors border-b-2 ${
-            activeTab === 'tours' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          Quản lý Tour ({tours.length})
-        </button>
-        <button 
-          onClick={() => setActiveTab('orders')}
-          className={`pb-4 px-2 font-bold transition-colors border-b-2 ${
-            activeTab === 'orders' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          Đơn Đặt Tour ({orders.length})
-        </button>
+      {/* Biểu đồ Doanh thu */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2">
+          <h2 className="text-xl font-bold text-slate-900 mb-6">Top Doanh Thu Theo Tour</h2>
+          {stats?.revenueByTour && stats.revenueByTour.length > 0 ? (
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.revenueByTour.slice(0, 5)} margin={{ top: 10, right: 10, left: 40, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false}
+                    tick={{ fill: '#64748B', fontSize: 12 }}
+                    tickFormatter={(val) => val.length > 15 ? val.substring(0, 15) + '...' : val}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false}
+                    tick={{ fill: '#64748B', fontSize: 12 }}
+                    tickFormatter={(val) => (val / 1000000) + 'M'}
+                  />
+                  <Tooltip 
+                    cursor={{ fill: '#F8FAFC' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value) => [value.toLocaleString() + 'đ', 'Doanh thu']}
+                  />
+                  <Bar 
+                    dataKey="revenue" 
+                    fill="#0D9488" 
+                    radius={[6, 6, 0, 0]} 
+                    barSize={40}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-40 flex items-center justify-center text-gray-500">Chưa có dữ liệu doanh thu</div>
+          )}
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-1">
+          <h2 className="text-xl font-bold text-slate-900 mb-6">Tổng Quan Trạng Thái</h2>
+          {pieData.length > 0 ? (
+            <div className="h-80 w-full flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-40 flex items-center justify-center text-gray-500">Chưa có dữ liệu đơn hàng</div>
+          )}
+        </div>
+      </div>
+
+      {/* Tabs Menu & Actions */}
+      <div className="flex justify-between items-end mb-6 border-b border-gray-200">
+        <div className="flex gap-4">
+          <button 
+            onClick={() => setActiveTab('tours')}
+            className={`pb-4 px-2 font-bold transition-colors border-b-2 ${
+              activeTab === 'tours' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            Quản lý Tour ({tours.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab('orders')}
+            className={`pb-4 px-2 font-bold transition-colors border-b-2 ${
+              activeTab === 'orders' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            Đơn Đặt Tour ({orders.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab('promotions')}
+            className={`pb-4 px-2 font-bold transition-colors border-b-2 ${
+              activeTab === 'promotions' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            Khuyến Mãi ({promotions.length})
+          </button>
+        </div>
+
+        <div className="pb-3">
+          {activeTab === 'tours' && (
+            <button 
+              onClick={() => { setEditingTour(null); setIsModalOpen(true); }}
+              className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm transition-all text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Thêm Tour Mới
+            </button>
+          )}
+          {activeTab === 'promotions' && (
+            <button 
+              onClick={handleAddPromotion}
+              className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm transition-all text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Thêm Khuyến Mãi
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Nội dung Tabs */}
@@ -308,6 +441,39 @@ const AdminDashboard = () => {
                 </table>
               </div>
             )}
+
+            {/* TAB: PROMOTIONS */}
+            {activeTab === 'promotions' && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500">
+                      <th className="p-4 font-semibold">Mã Khuyến Mãi</th>
+                      <th className="p-4 font-semibold">Giá Trị Giảm</th>
+                      <th className="p-4 font-semibold text-right">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-sm">
+                    {promotions.length === 0 && (
+                      <tr><td colSpan="3" className="p-10 text-center text-gray-500">Chưa có mã khuyến mãi nào.</td></tr>
+                    )}
+                    {promotions.map(promo => (
+                      <tr key={promo.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="p-4 font-bold text-slate-700">
+                          <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-md border border-emerald-100">{promo.code}</span>
+                        </td>
+                        <td className="p-4 text-orange-500 font-bold">{promo.discountValue.toLocaleString()}đ</td>
+                        <td className="p-4 text-right">
+                          <button onClick={() => handleDeletePromotion(promo.id)} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -319,9 +485,9 @@ const AdminDashboard = () => {
         tourData={editingTour}
       />
 
-      <ConfirmOrderModal
-        isOpen={confirmOrder.isOpen}
-        onClose={() => setConfirmOrder({ isOpen: false, order: null, newStatus: '' })}
+      <ConfirmOrderModal 
+        isOpen={confirmOrder.isOpen} 
+        onClose={() => setConfirmOrder({ isOpen: false, order: null, newStatus: '' })} 
         onConfirm={executeUpdateOrderStatus}
         order={confirmOrder.order}
         newStatus={confirmOrder.newStatus}
@@ -331,6 +497,20 @@ const AdminDashboard = () => {
         isOpen={!!viewingOrder}
         onClose={() => setViewingOrder(null)}
         order={viewingOrder}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteTourId}
+        onClose={() => setDeleteTourId(null)}
+        onConfirm={executeDeleteTour}
+        title="Xóa Tour này?"
+        message="Dữ liệu về Tour này sẽ bị xóa vĩnh viễn khỏi hệ thống. Bạn chắc chắn chứ?"
+      />
+
+      <PromotionFormModal 
+        isOpen={isPromoModalOpen}
+        onClose={() => setIsPromoModalOpen(false)}
+        onSuccess={() => fetchData()}
       />
     </div>
   );

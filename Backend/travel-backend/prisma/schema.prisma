@@ -103,6 +103,7 @@ model Order {
   promotionId Int?
   totalPrice  Float
   status      String       @default("PENDING")
+  cancelReason String?     @db.Text
   user        User         @relation(fields: [userId], references: [id])
   schedule    TourSchedule @relation(fields: [scheduleId], references: [id])
   promotion   Promotion?   @relation(fields: [promotionId], references: [id])

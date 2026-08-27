@@ -45,6 +45,13 @@ const OrderDetailModal = ({ isOpen, onClose, order }) => {
                 <p className="text-orange-500 font-bold mt-2">{order.totalPrice.toLocaleString()}đ</p>
               </div>
             </div>
+            
+            {order.status === 'CANCELLED' && order.cancelReason && (
+              <div className="mt-4 p-3 bg-rose-50 border border-rose-100 rounded-lg">
+                <p className="text-sm font-bold text-rose-800 mb-1">Lý do từ chối/hủy:</p>
+                <p className="text-sm text-rose-700 italic">{order.cancelReason}</p>
+              </div>
+            )}
           </div>
 
           {/* Danh sách hành khách */}

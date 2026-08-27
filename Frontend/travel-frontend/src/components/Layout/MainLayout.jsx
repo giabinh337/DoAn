@@ -21,7 +21,7 @@ const MainLayout = ({ children }) => {
   const { wishlistTours, setIsWishlistOpen } = useWishlist();
   const { isLoggedIn, user, openAuthPopup, logout, openMyBookings } = useAuth();
   const [searchParams] = useSearchParams();
-  const activeCategory = parseInt(searchParams.get('category') || '1');
+  const activeCategory = parseInt(searchParams.get('category') || '0');
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
 
   return (

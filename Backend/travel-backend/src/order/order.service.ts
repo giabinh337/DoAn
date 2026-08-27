@@ -6,7 +6,7 @@ export class OrderService {
   constructor(private prisma: PrismaService) {}
 
   async createOrder(body: any) {
-    const { userId, tourId, passengers, totalPrice } = body;
+    const { userId, tourId, passengers, totalPrice, promotionId } = body;
 
     if (!userId || !tourId || !passengers || passengers.length === 0) {
       throw new BadRequestException('Vui lòng cung cấp đủ userId, tourId và danh sách passengers!');
@@ -40,6 +40,7 @@ export class OrderService {
         orderCode: 'ORD' + Date.now(),
         userId: userId,
         scheduleId: schedule.id,
+        promotionId: promotionId ? Number(promotionId) : null,
         totalPrice: Number(totalPrice),
         status: 'PENDING', // Trạng thái chờ thanh toán
         passengers: {
@@ -100,10 +101,50 @@ export class OrderService {
     });
   }
 
-  async updateOrderStatus(orderId: number, status: string) {
+  async getOrderStats() {
+    const orders = await this.getAllOrders();
+    
+    let totalRevenue = 0;
+    let totalOrders = orders.length;
+    let cancelledOrders = 0;
+    let totalPassengers = 0;
+    
+    const revenueByTourMap = new Map<string, number>();
+
+    orders.forEach(order => {
+      totalPassengers += order.passengers.length;
+      
+      if (order.status === 'CANCELLED') {
+        cancelledOrders++;
+      } else {
+        totalRevenue += order.totalPrice;
+        const tourName = order.schedule?.tour?.name || 'Tour Khác';
+        const currentRevenue = revenueByTourMap.get(tourName) || 0;
+        revenueByTourMap.set(tourName, currentRevenue + order.totalPrice);
+      }
+    });
+
+    const revenueByTour = Array.from(revenueByTourMap, ([name, revenue]) => ({
+      name,
+      revenue
+    })).sort((a, b) => b.revenue - a.revenue);
+
+    return {
+      totalRevenue,
+      totalOrders,
+      cancelledOrders,
+      totalPassengers,
+      revenueByTour
+    };
+  }
+
+  async updateOrderStatus(orderId: number, status: string, cancelReason?: string) {
     return this.prisma.order.update({
       where: { id: orderId },
-      data: { status }
+      data: { 
+        status,
+        ...(cancelReason ? { cancelReason } : {})
+      }
     });
   }
 }

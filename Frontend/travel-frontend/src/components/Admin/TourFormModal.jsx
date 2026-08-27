@@ -16,7 +16,7 @@ const TourFormModal = ({ isOpen, onClose, onSuccess, tourData = null }) => {
   
   // Itinerary builder state
   const [itinerary, setItinerary] = useState([
-    { day: "Ngày 1", title: "", activityDesc: "" }
+    { day: "Ngày 1", title: "", time: "08:00", activityDesc: "" }
   ]);
 
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -49,11 +49,12 @@ const TourFormModal = ({ isOpen, onClose, onSuccess, tourData = null }) => {
           const parsedItinerary = tourData.itinerary.map(item => ({
             day: item.day || '',
             title: item.title || '',
+            time: item.activities && item.activities[0] ? item.activities[0].time : '08:00',
             activityDesc: item.activities && item.activities[0] ? item.activities[0].desc : ''
           }));
           setItinerary(parsedItinerary);
         } else {
-          setItinerary([{ day: "Ngày 1", title: "", activityDesc: "" }]);
+          setItinerary([{ day: "Ngày 1", title: "", time: "08:00", activityDesc: "" }]);
         }
 
         // Keep old gallery images
@@ -67,7 +68,7 @@ const TourFormModal = ({ isOpen, onClose, onSuccess, tourData = null }) => {
       } else {
         // Add mode
         setFormData({ name: '', price: '', categoryId: '', destinationId: '', overview: '', highlights: '' });
-        setItinerary([{ day: "Ngày 1", title: "", activityDesc: "" }]);
+        setItinerary([{ day: "Ngày 1", title: "", time: "08:00", activityDesc: "" }]);
         setSelectedFiles([]);
         setPreviewUrls([]);
         setOldGallery([]);
@@ -109,7 +110,7 @@ const TourFormModal = ({ isOpen, onClose, onSuccess, tourData = null }) => {
   };
 
   const addItineraryDay = () => {
-    setItinerary([...itinerary, { day: `Ngày ${itinerary.length + 1}`, title: "", activityDesc: "" }]);
+    setItinerary([...itinerary, { day: `Ngày ${itinerary.length + 1}`, title: "", time: "08:00", activityDesc: "" }]);
   };
 
   const removeItineraryDay = (index) => {
@@ -185,7 +186,7 @@ const TourFormModal = ({ isOpen, onClose, onSuccess, tourData = null }) => {
         day: item.day,
         title: item.title || "Tự do khám phá",
         activities: [{
-          time: "08:00",
+          time: item.time || "08:00",
           desc: item.activityDesc || "Hoạt động tự do",
           icon: "MapPin"
         }]
@@ -387,7 +388,7 @@ const TourFormModal = ({ isOpen, onClose, onSuccess, tourData = null }) => {
                       </button>
                     )}
                     <div className="font-bold text-slate-800 mb-2">{item.day}</div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div className="col-span-1">
                         <input 
                           type="text" placeholder="Tiêu đề (VD: Khởi hành)" 
@@ -395,9 +396,16 @@ const TourFormModal = ({ isOpen, onClose, onSuccess, tourData = null }) => {
                           className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none text-sm"
                         />
                       </div>
+                      <div className="col-span-1">
+                        <input 
+                          type="text" placeholder="Giờ (VD: 08:30)"
+                          value={item.time} onChange={(e) => handleItineraryChange(idx, 'time', e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none text-sm"
+                        />
+                      </div>
                       <div className="col-span-1 md:col-span-2">
                         <input 
-                          type="text" placeholder="Hoạt động chính (VD: 08:00 - Đón khách tại bến xe)" 
+                          type="text" placeholder="Hoạt động chính (VD: Đón khách)" 
                           value={item.activityDesc} onChange={(e) => handleItineraryChange(idx, 'activityDesc', e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none text-sm"
                         />

@@ -15,13 +15,22 @@ export class OrderController {
     return this.orderService.getOrdersByUser(userId);
   }
 
+  @Get('stats')
+  async getOrderStats() {
+    return this.orderService.getOrderStats();
+  }
+
   @Get()
   async getAllOrders() {
     return this.orderService.getAllOrders();
   }
 
   @Post(':id/status')
-  async updateOrderStatus(@Param('id') id: string, @Body('status') status: string) {
-    return this.orderService.updateOrderStatus(Number(id), status);
+  async updateOrderStatus(
+    @Param('id') id: string, 
+    @Body('status') status: string,
+    @Body('cancelReason') cancelReason?: string
+  ) {
+    return this.orderService.updateOrderStatus(Number(id), status, cancelReason);
   }
 }

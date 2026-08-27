@@ -19,7 +19,7 @@ const getIcon = (iconName) => {
 
 const Home = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeCategoryId = parseInt(searchParams.get('category') || '1');
+  const activeCategoryId = parseInt(searchParams.get('category') || '0');
   const [compareList, setCompareList] = useState([]);
   const [isComparePopupOpen, setIsComparePopupOpen] = useState(false);
   const [tours, setTours] = useState([]);
@@ -59,8 +59,15 @@ const Home = () => {
   // Fetch dữ liệu Tour thật từ Backend
   useEffect(() => {
     const fetchTours = async () => {
+      setIsLoading(true);
       try {
-        const response = await fetch('http://localhost:3000/tour');
+        const cleanSearch = appliedSearchLocation 
+          ? appliedSearchLocation.replace(/thành phố|tỉnh|tp\.?/gi, '').trim()
+          : '';
+        const url = cleanSearch 
+          ? `http://localhost:3000/tour?keyword=${encodeURIComponent(cleanSearch)}`
+          : 'http://localhost:3000/tour';
+        const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
           // Map dữ liệu CSDL sang cấu trúc Component hiển thị
@@ -83,7 +90,7 @@ const Home = () => {
       }
     };
     fetchTours();
-  }, []);
+  }, [appliedSearchLocation]);
 
   // Xử lý Thêm/Xóa tour khỏi danh sách so sánh
   const handleCompare = (tour) => {
@@ -96,23 +103,10 @@ const Home = () => {
     });
   };
 
-  // Lọc tour theo Category và Search Location
-  let filteredTours = activeCategoryId === 1 
+  // Lọc tour theo Category
+  let filteredTours = activeCategoryId === 0 
     ? tours 
     : tours.filter(tour => tour.categoryId === activeCategoryId);
-
-  if (appliedSearchLocation) {
-    const searchVal = appliedSearchLocation.toLowerCase();
-    filteredTours = filteredTours.filter(tour => {
-      const loc = tour.location?.toLowerCase() || '';
-      const title = tour.title?.toLowerCase() || '';
-      // Trích xuất các từ khóa chính để tìm kiếm thông minh hơn (bỏ chữ "thành phố", "tỉnh")
-      const cleanSearch = searchVal.replace(/thành phố|tỉnh|tp\.?/g, '').trim();
-      
-      return loc.includes(cleanSearch) || cleanSearch.includes(loc) || 
-             title.includes(cleanSearch) || cleanSearch.includes(title);
-    });
-  }
 
   const handleSearch = () => {
     setAppliedSearchLocation(searchLocation);
@@ -302,7 +296,7 @@ const Home = () => {
 
              <button 
                 onClick={() => {
-                  setSearchParams({ category: '1' });
+                  setSearchParams({ category: '0' });
                   setAppliedSearchLocation('');
                   setSearchLocation('');
                 }}
