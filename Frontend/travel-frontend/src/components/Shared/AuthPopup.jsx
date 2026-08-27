@@ -5,12 +5,12 @@ import { useAuth } from '../../contexts/AuthContext';
 const AuthPopup = () => {
   const { isAuthPopupOpen, closeAuthPopup, login } = useAuth();
   const [activeTab, setActiveTab] = useState('login'); // 'login' hoặc 'register'
-  
+
   // Các state lưu trữ thông tin người dùng gõ vào
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   // State thông báo lỗi hoặc thành công
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +20,7 @@ const AuthPopup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault(); // Ngăn trang web load lại
     setMessage('');
-    
+
     // Kiểm tra cơ bản nếu là form đăng ký
     if (activeTab === 'register' && password !== confirmPassword) {
       setMessage('Mật khẩu nhập lại không khớp!');
@@ -31,8 +31,8 @@ const AuthPopup = () => {
 
     try {
       // Gửi API xuống Backend
-      const url = activeTab === 'login' 
-        ? 'http://localhost:3000/auth/login' 
+      const url = activeTab === 'login'
+        ? 'http://localhost:3000/auth/login'
         : 'http://localhost:3000/auth/register';
 
       const response = await fetch(url, {
@@ -71,9 +71,9 @@ const AuthPopup = () => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       {/* Khung Popup */}
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-300">
-        
+
         {/* Nút Đóng */}
-        <button 
+        <button
           onClick={closeAuthPopup}
           className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition"
         >
@@ -89,17 +89,15 @@ const AuthPopup = () => {
           <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
             <button
               onClick={() => { setActiveTab('login'); setMessage(''); }}
-              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                activeTab === 'login' ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'login' ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
             >
               Đăng nhập
             </button>
             <button
               onClick={() => { setActiveTab('register'); setMessage(''); }}
-              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                activeTab === 'register' ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'register' ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
             >
               Đăng ký
             </button>
@@ -120,7 +118,7 @@ const AuthPopup = () => {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                   <Mail className="w-5 h-5" />
                 </div>
-                <input 
+                <input
                   type="email"
                   required
                   value={email}
@@ -137,7 +135,7 @@ const AuthPopup = () => {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                   <Lock className="w-5 h-5" />
                 </div>
-                <input 
+                <input
                   type="password"
                   required
                   value={password}
@@ -148,6 +146,19 @@ const AuthPopup = () => {
               </div>
             </div>
 
+            {/* Quên mật khẩu (chỉ hiện ở tab Login) */}
+            {activeTab === 'login' && (
+              <div className="flex justify-end mt-1">
+                <button
+                  type="button"
+                  onClick={() => setMessage('Tính năng đang bảo trì. Vui lòng liên hệ Hotline: 0901 796 681 để lấy lại mật khẩu!')}
+                  className="text-sm font-medium text-teal-600 hover:text-teal-700 hover:underline transition-all"
+                >
+                  Quên mật khẩu?
+                </button>
+              </div>
+            )}
+
             {/* Chỉ hiện ô Nhập lại mật khẩu nếu đang ở tab Đăng ký */}
             {activeTab === 'register' && (
               <div>
@@ -156,7 +167,7 @@ const AuthPopup = () => {
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                     <Lock className="w-5 h-5" />
                   </div>
-                  <input 
+                  <input
                     type="password"
                     required
                     value={confirmPassword}
@@ -168,7 +179,7 @@ const AuthPopup = () => {
               </div>
             )}
 
-            <button 
+            <button
               type="submit"
               disabled={isLoading}
               className="w-full bg-slate-900 hover:bg-teal-600 text-white font-semibold py-3 rounded-xl transition-colors mt-2"

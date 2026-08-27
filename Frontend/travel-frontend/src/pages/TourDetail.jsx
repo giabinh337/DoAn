@@ -119,6 +119,22 @@ const TourDetail = () => {
     }
   }
 
+  let finalImages = [
+    backendTour.image || `${baseFolder}/${baseName} 1.jpg`,
+    `${baseFolder}/${baseName} 2.jpg`,
+    `${baseFolder}/${baseName} 3.jpg`,
+    `${baseFolder}/${baseName} 4.jpg`,
+    `${baseFolder}/${baseName} 5.jpg`
+  ];
+  
+  if (Array.isArray(backendTour.gallery) && backendTour.gallery.length > 0) {
+    const gallery = backendTour.gallery;
+    finalImages = [
+      ...gallery,
+      ...finalImages.slice(gallery.length)
+    ];
+  }
+
   // Kết hợp dữ liệu thật từ Backend (Tên, Ảnh, Giá, Lịch trình) với giao diện thiết kế sẵn
   const mockTour = {
     id: backendTour.id,
@@ -130,13 +146,7 @@ const TourDetail = () => {
     rating: 5.0,
     reviews: 124,
     image: backendTour.image,
-    images: Array.isArray(backendTour.gallery) && backendTour.gallery.length > 0 ? backendTour.gallery : [
-      backendTour.image || `${baseFolder}/${baseName} 1.jpg`,
-      `${baseFolder}/${baseName} 2.jpg`,
-      `${baseFolder}/${baseName} 3.jpg`,
-      `${baseFolder}/${baseName} 4.jpg`,
-      `${baseFolder}/${baseName} 5.jpg`
-    ],
+    images: finalImages,
     overview: backendTour.overview || 'Chuyến đi sẽ đưa bạn khám phá những điểm đến tuyệt đẹp và trải nghiệm không thể quên. Tận hưởng không gian nghỉ ngơi thoải mái và các hoạt động thú vị, hòa mình vào thiên nhiên và văn hóa đặc sắc.',
     highlights: Array.isArray(backendTour.highlights) ? backendTour.highlights : [
       'Trải nghiệm đẳng cấp và dịch vụ chuyên nghiệp suốt hành trình.',
