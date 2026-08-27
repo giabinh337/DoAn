@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  role         String        @default("CUSTOMER")
+  status       String        @default("ACTIVE")
+  sessions     UserSession[]
+  reviews      Review[]
+  wishlists    Wishlist[]
+  orders       Order[]
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Category {
+  id       Int    @id @default(autoincrement())
+  name     String 
+  vibeIcon String // Hỗ trợ hiển thị icon cho Bộ lọc Vibe
+  tours    Tour[]
+}
+
+model Destination {
+  id     Int    @id @default(autoincrement())
+  name   String
+  region String
+  tours  Tour[]
+}
+
+model Tour {
+  id            Int            @id @default(autoincrement())
+  categoryId    Int
+  destinationId Int
+  name          String
+  image         String         @default("https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800")
+  gallery       Json?          // Lưu danh sách ảnh upload từ Admin
+  price         Float
+  overview      String?        @db.Text
+  highlights    Json?
+  itinerary     Json           // Lưu dạng JSON để Frontend render Lịch trình Timeline tương tác
+  category      Category       @relation(fields: [categoryId], references: [id])
+  destination   Destination    @relation(fields: [destinationId], references: [id])
+  schedules     TourSchedule[]
+  reviews       Review[]
+  wishlists     Wishlist[]
+}
+
+model TourSchedule {
+  id             Int      @id @default(autoincrement())
+  tourId         Int
+  startDate      DateTime
+  totalSeats     Int
+  availableSeats Int      // Dùng để Frontend bắt logic kích hoạt "Smart Empty States"
+  tour           Tour     @relation(fields: [tourId], references: [id])
+  orders         Order[]
+}
+
+model Wishlist {
+  id           Int     @id @default(autoincrement())
+  userId       String
+  tourId       Int
+  sharedWithId String? // Phục vụ Collaborative Planning
+  voteCount    Int     @default(0)
+  user         User    @relation(fields: [userId], references: [id])
+  tour         Tour    @relation(fields: [tourId], references: [id])
+}
+
+model Review {
+  id      Int    @id @default(autoincrement())
+  userId  String
+  tourId  Int
+  rating  Int
+  comment String @db.Text
+  user    User   @relation(fields: [userId], references: [id])
+  tour    Tour   @relation(fields: [tourId], references: [id])
+}
+
+model Promotion {
+  id            Int     @id @default(autoincrement())
+  code          String  @unique
+  discountValue Float
+  orders        Order[]
+}
+
+model Order {
+  id          Int          @id @default(autoincrement())
+  orderCode   String       @unique
+  userId      String
+  scheduleId  Int
+  promotionId Int?
+  totalPrice  Float
+  status      String       @default("PENDING")
+  user        User         @relation(fields: [userId], references: [id])
+  schedule    TourSchedule @relation(fields: [scheduleId], references: [id])
+  promotion   Promotion?   @relation(fields: [promotionId], references: [id])
+  passengers  Passenger[]
+  payment     Payment?
+}
+
+model Passenger {
+  id              Int     @id @default(autoincrement())
+  orderId         Int
+  fullName        String
+  specialRequests String? // Lưu các Quick-chips yêu cầu cá nhân hóa
+  order           Order   @relation(fields: [orderId], references: [id])
+}
+
+model Payment {
+  id         Int    @id @default(autoincrement())
+  orderId    Int    @unique
+  method     String
+  taxAndFee  Float  // Hỗ trợ Thanh Bill nổi minh bạch
+  status     String @default("UNPAID")
+  order      Order  @relation(fields: [orderId], references: [id])
+}
