@@ -30,7 +30,7 @@ export class TourService {
   async getTourById(id: number) {
     const tour = await this.prisma.tour.findUnique({
       where: { id },
-      include: { category: true, destination: true }
+      include: { category: true, destination: true, schedules: true }
     });
     if (!tour) throw new NotFoundException('Không tìm thấy Tour này trong hệ thống!');
     return tour;

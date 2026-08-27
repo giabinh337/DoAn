@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, MapPin, Clock, Sun, Coffee, Heart, Share, ImageIcon, Check, Palmtree, Utensils, Mountain, Globe } from 'lucide-react';
+import { Star, MapPin, Clock, Sun, Coffee, Heart, Share, ImageIcon, Check, Palmtree, Utensils, Mountain, Globe, User } from 'lucide-react';
 import TourCard from '../components/Shared/TourCard';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -146,6 +146,10 @@ const TourDetail = () => {
     ],
     itinerary: normalizedItinerary
   };
+
+  const availableSeats = backendTour.schedules && backendTour.schedules.length > 0 
+    ? backendTour.schedules[0].availableSeats 
+    : 20;
 
   const isWishlisted = wishlistTours.some(t => t.id === mockTour.id);
 
@@ -525,6 +529,19 @@ const TourDetail = () => {
                     {mockTour.price.toLocaleString()}đ
                   </span>
                   <span className="text-gray-500 font-medium mb-1">/ khách</span>
+                </div>
+              </div>
+              
+              {/* Hiển thị số chỗ còn trống */}
+              <div className="mb-6 bg-orange-50 border border-orange-100 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 font-bold" />
+                  </div>
+                  <span className="font-bold text-orange-800">Số chỗ còn trống</span>
+                </div>
+                <div className="text-xl font-extrabold text-orange-600">
+                  {availableSeats} <span className="text-sm font-medium text-orange-700">chỗ</span>
                 </div>
               </div>
 
