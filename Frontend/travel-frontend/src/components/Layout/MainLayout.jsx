@@ -61,7 +61,7 @@ const MainLayout = ({ children }) => {
           {/* Actions - Flex 1 */}
           <div className="flex-1 flex items-center justify-end gap-5">
             <button
-              onClick={() => setIsWishlistOpen(true)}
+              onClick={() => isLoggedIn ? setIsWishlistOpen(true) : openAuthPopup()}
               className="relative p-2 text-gray-500 hover:text-rose-500 transition-colors"
             >
               <Heart className="w-6 h-6" />
